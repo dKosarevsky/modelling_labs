@@ -1,6 +1,10 @@
-# Modelling lab 001
+# Modelling labs
 
-[Course](https://github.com/dKosarevsky/iu7/blob/master/6sem/modeling.md)
+[Course](https://github.com/dKosarevsky/iu7/blob/master/6sem/modeling.md) | [all labs on web page](https://share.streamlit.io/dkosarevsky/modelling_labs/main.py)
+
+
+## lab 001
+[code](https://github.com/dKosarevsky/modelling_labs/tree/master/lab_001)
 
 На экране табличка.
 
@@ -29,7 +33,8 @@
 
 +текст программы (код) на носителе.
 
-# Modelling lab 002
+## lab 001
+[code](https://github.com/dKosarevsky/modelling_labs/tree/master/lab_002)
 
 Случайные процессы.
 

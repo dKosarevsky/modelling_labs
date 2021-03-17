@@ -1,5 +1,6 @@
 import streamlit as st
 import numpy as np
+import scipy.stats as sts
 
 import plotly.figure_factory as ff
 import plotly.graph_objects as go
@@ -44,7 +45,7 @@ def show_tz():
 
 def plot_distribution(random_sample, bins):
     fig = go.Figure(data=[go.Histogram(x=random_sample, nbinsx=bins)])
-    fig.update_layout(title_text="Распределение")
+    fig.update_layout(title_text="Гистограмма")
     st.write(fig)
 
     fig = ff.create_distplot([random_sample], [""], bin_size=.2, show_hist=False)
@@ -82,7 +83,30 @@ def main():
         lower_boundary = c1.number_input("Нижняя граница:", value=0.0)
         upper_boundary = c2.number_input("Верхняя граница:", min_value=0.1, value=1.0)
         size = c3.number_input("Размер выборки:", min_value=2, value=1000)
-        bins = c4.number_input("Размер корзины:", min_value=10, value=50)
+        bins = c4.number_input("Размер корзины:", min_value=2, value=50)
+
+        uniform_rv = sts.uniform(lower_boundary, upper_boundary - lower_boundary)
+        x = np.linspace(lower_boundary - 1, upper_boundary + 1, size)
+
+        cdf = uniform_rv.cdf(x)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=x,
+            y=cdf,
+            mode='lines',
+        ))
+        fig.update_layout(title_text="Распределение вероятностей")
+        st.write(fig)
+
+        pdf = uniform_rv.pdf(x)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=x,
+            y=pdf,
+            mode='lines',
+        ))
+        fig.update_layout(title_text="Плотность вероятностей")
+        st.write(fig)
 
         random_uniform = RNG.uniform(low=lower_boundary, high=upper_boundary, size=size)
         plot_distribution(random_uniform, bins)
@@ -101,8 +125,30 @@ def main():
         size = c2.number_input("Размер выборки:", min_value=2, value=10000)
         bins = c3.number_input("Размер корзины:", min_value=2, value=30)
 
-        random_poisson = RNG.poisson(exp_interval, size)
+        poisson_rv = sts.poisson(exp_interval)
+        x = np.linspace(0, 30, 31)
 
+        cdf = poisson_rv.cdf(x)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=x,
+            y=cdf,
+            mode='lines',
+        ))
+        fig.update_layout(title_text="Распределение вероятностей")
+        st.write(fig)
+
+        pmf = poisson_rv.pmf(x)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=x,
+            y=pmf,
+            mode='lines',
+        ))
+        fig.update_layout(title_text="Плотность вероятностей")
+        st.write(fig)
+
+        random_poisson = RNG.poisson(exp_interval, size)
         plot_distribution(random_poisson, bins)
 
         st.markdown("""
@@ -129,7 +175,6 @@ def main():
         bins = c4.number_input("Размер корзины:", min_value=2, value=30)
 
         random_normal = RNG.normal(mu, sigma, size)
-
         plot_distribution(random_normal, bins)
 
     elif distribution[:1] == "4":
@@ -142,7 +187,6 @@ def main():
         bins = c4.number_input("Размер корзины:", min_value=2, value=30)
 
         random_gamma = RNG.gamma(shape, scale, size)
-
         plot_distribution(random_gamma, bins)
 
 

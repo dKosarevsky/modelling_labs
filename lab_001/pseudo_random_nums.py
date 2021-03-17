@@ -56,21 +56,7 @@ def ibmq_qrng(num_q, minimum, maximum):
     return result1
 
 
-def header():
-    author = """
-        ---
-        made by [Kosarevsky Dmitry](https://github.com/dKosarevsky) 
-        for Modelling [lab#1](https://github.com/dKosarevsky/modelling_lab_001)
-        in [BMSTU](https://bmstu.ru)
-    """
-    st.title("МГТУ им. Баумана. Кафедра ИУ7")
-    st.header("Моделирование. Лабораторная работа №1")
-    st.write("Исследование последовательности псевдослучайных чисел")
-    st.write("Преподаватель: Рудаков И.В.")
-    st.write("Студент: Косаревский Д.П.")
-    st.write("")
-    st.write("---")
-    st.sidebar.markdown(author)
+
 
 
 def user_input_handler(digit_capacity: int, key: int) -> np.array:
@@ -234,7 +220,8 @@ def gen_rnd_smpl(low: int, high: int, size: int = 1000, d_type=np.int16) -> np.a
 
 
 def main():
-    header()
+    st.header("Моделирование. Лабораторная работа №1")
+    st.write("Исследование последовательности псевдослучайных чисел")
 
     random_type = st.radio(
         "Выберите метод получения чисел",

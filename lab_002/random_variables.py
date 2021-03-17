@@ -9,23 +9,6 @@ np.random.seed(42)
 RNG = np.random.default_rng()
 
 
-def header():
-    author = """
-        ---
-        made by [Kosarevsky Dmitry](https://github.com/dKosarevsky) 
-        for Modelling [lab#2](https://github.com/dKosarevsky/modelling_lab_002)
-        in [BMSTU](https://bmstu.ru)
-    """
-    st.title("МГТУ им. Баумана. Кафедра ИУ7")
-    st.header("Моделирование. Лабораторная работа №2")
-    st.write("Исследование случайных величин")
-    st.write("Преподаватель: Рудаков И.В.")
-    st.write("Студент: Косаревский Д.П.")
-    st.write("")
-    st.write("---")
-    st.sidebar.markdown(author)
-
-
 def show_tz():
     st.markdown("""
         Вариант 7.
@@ -61,7 +44,8 @@ def plot_distribution(random_sample, bins):
 
 
 def main():
-    header()
+    st.header("Моделирование. Лабораторная работа №2")
+    st.write("Исследование случайных величин")
 
     if st.checkbox("Показать ТЗ"):
         show_tz()

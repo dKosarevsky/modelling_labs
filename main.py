@@ -6,7 +6,24 @@ st.set_page_config(initial_sidebar_state="collapsed")
 st.sidebar.image('logo.png', width=300)
 
 
+def header():
+    author = """
+        ---
+        made by [Kosarevsky Dmitry](https://github.com/dKosarevsky) 
+        for Modelling [labs](https://github.com/dKosarevsky/modelling_labs)
+        in [BMSTU](https://bmstu.ru)
+    """
+    st.title("МГТУ им. Баумана. Кафедра ИУ7")
+
+    st.write("Преподаватель: Рудаков И.В.")
+    st.write("Студент: Косаревский Д.П.")
+    st.write("")
+    st.write("---")
+    st.sidebar.markdown(author)
+
+
 def main():
+    header()
     lab = st.radio(
         "Выберите Лабораторную работу", (
             "1. Исследование последовательности псевдослучайных чисел",

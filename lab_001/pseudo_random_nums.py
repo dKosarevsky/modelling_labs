@@ -56,9 +56,6 @@ def ibmq_qrng(num_q, minimum, maximum):
     return result1
 
 
-
-
-
 def user_input_handler(digit_capacity: int, key: int) -> np.array:
     """
     User input handler

@@ -79,7 +79,7 @@ def main():
             y=cdf,
             mode='lines',
         ))
-        fig.update_layout(title_text="Распределение вероятностей")
+        fig.update_layout(title_text="Функция распределения (распределение вероятности)")
         st.write(fig)
 
         pdf = uniform_rv.pdf(x)
@@ -87,9 +87,9 @@ def main():
         fig.add_trace(go.Scatter(
             x=x,
             y=pdf,
-            mode='lines',
+            mode='lines+markers',
         ))
-        fig.update_layout(title_text="Плотность вероятностей")
+        fig.update_layout(title_text="Функция вероятности (плотность вероятности)")
         st.write(fig)
 
         random_uniform = RNG.uniform(low=lower_boundary, high=upper_boundary, size=size)
@@ -119,7 +119,7 @@ def main():
             y=cdf,
             mode='lines',
         ))
-        fig.update_layout(title_text="Распределение вероятностей")
+        fig.update_layout(title_text="Функция распределения (распределение вероятности)")
         st.write(fig)
 
         pmf = poisson_rv.pmf(x)
@@ -129,7 +129,7 @@ def main():
             y=pmf,
             mode='lines',
         ))
-        fig.update_layout(title_text="Плотность вероятностей")
+        fig.update_layout(title_text="Функция вероятности (плотность вероятности)")
         st.write(fig)
 
         random_poisson = RNG.poisson(exp_interval, size)
@@ -147,6 +147,8 @@ def main():
         Отметим, что нормальное распределение является предельным случаем распределения Пуассона с параметром λ → ∞. 
         Кроме того, если время между случайными событиями следует экспоненциальному распределению со скоростью λ, 
         то общее количество событий в период времени длиной t следует распределению Пуассона с параметром λt.
+        
+        Распределение Пуассона играет ключевую роль в теории массового обслуживания.
         """)
 
     elif distribution[:1] == "3":

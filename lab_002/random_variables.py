@@ -127,7 +127,7 @@ def main():
         fig.add_trace(go.Scatter(
             x=x,
             y=pmf,
-            mode='lines',
+            mode='lines+markers',
         ))
         fig.update_layout(title_text="Функция вероятности (плотность вероятности)")
         st.write(fig)

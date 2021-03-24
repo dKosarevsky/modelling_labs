@@ -1,11 +1,12 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
+import scipy.stats as sts
 
 import plotly.figure_factory as ff
 import plotly.graph_objects as go
 
-from st_aggrid import AgGrid, DataReturnMode, GridUpdateMode, GridOptionsBuilder
+from st_aggrid import AgGrid
 
 
 def show_tz():
@@ -41,13 +42,15 @@ def find_time(matrix, n):
         t = np.zeros(n)
 
     for i in range(n):
-        st.write(f"Время t_{i+1} = {round(t[i], 5)}")
+        # st.write(f"Вероятность p_{i} = {round(t[i], 2)}")
+        st.write(f"Вероятность p_{i+1} = {round(t[i], 2)}")
 
 
 @st.cache()
 def get_data(n, vals):
     arr_0 = np.zeros((n, n)).reshape(-1, n)
     arr_1 = np.ones((n, n)).reshape(-1, n)
+    # cols = [f"S_{i}" for i in range(0, n)]
     cols = [f"S_{i}" for i in range(1, n+1)]
     if vals == 0:
         df = pd.DataFrame(arr_0, columns=cols)
@@ -67,14 +70,28 @@ def main():
 
     c1, c2 = st.beta_columns(2)
     N = c1.slider("Задайте количество состояний системы (N):", min_value=1, max_value=10, value=5)
-    values = c2.selectbox("Заполнить? (нулями, единицами):", ("случайными значениями", 0, 1))
+    values = c2.selectbox("Заполнить? (единицами, случайно):", (0, 1, "случайными значениями"))
 
     df = get_data(N, values)
-    st.subheader("Введите данные:")
+    st.subheader("Введите значения интенсивности переходов (λ):")
     grid_return = AgGrid(df, editable=True, reload_data=False)
 
     arr = grid_return["data"].to_numpy()
     find_time(arr, N)
+
+
+    # lower_boundary = 0
+    # upper_boundary = N
+    # uniform_rv = sts.uniform(lower_boundary, upper_boundary - lower_boundary)
+    # pdf = uniform_rv.pdf(arr)
+    # fig = go.Figure()
+    # fig.add_trace(go.Scatter(
+    #     x=arr,
+    #     y=pdf,
+    #     mode='lines+markers',
+    # ))
+    # fig.update_layout(title_text="? Вероятности")
+    # st.write(fig)
 
 
 if __name__ == "__main__":

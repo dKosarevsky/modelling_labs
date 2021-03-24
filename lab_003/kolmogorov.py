@@ -45,13 +45,16 @@ def find_time(matrix, n):
 
 
 @st.cache()
-def get_data(n, zo):
-    arr = np.ones((n, n)).reshape(-1, n)
+def get_data(n, vals):
+    arr_0 = np.zeros((n, n)).reshape(-1, n)
+    arr_1 = np.ones((n, n)).reshape(-1, n)
     cols = [f"S_{i}" for i in range(1, n+1)]
-    if zo == 1:
-        df = pd.DataFrame(arr, columns=cols)
+    if vals == 0:
+        df = pd.DataFrame(arr_0, columns=cols)
+    elif vals == 1:
+        df = pd.DataFrame(arr_1, columns=cols)
     else:
-        df = pd.DataFrame(arr, columns=cols)
+        df = pd.DataFrame(np.random.randint(0, 1000, size=n*n).reshape(-1, n), columns=cols)
     return df
 
 
@@ -63,15 +66,15 @@ def main():
         show_tz()
 
     c1, c2 = st.beta_columns(2)
-    N = c1.slider("Количество состояний системы (N):", min_value=1, max_value=10, value=5)
-    zero_one = c2.slider("Заполнить нулями/единицами:", min_value=0, max_value=1, value=1)
+    N = c1.slider("Задайте количество состояний системы (N):", min_value=1, max_value=10, value=5)
+    values = c2.selectbox("Заполнить? (нулями, единицами):", ("случайными значениями", 0, 1))
 
-    df = get_data(N, zero_one)
+    df = get_data(N, values)
     st.subheader("Введите данные:")
     grid_return = AgGrid(df, editable=True, reload_data=False)
 
-    df = grid_return["data"]
-    find_time(df.to_numpy(), N)
+    arr = grid_return["data"].to_numpy()
+    find_time(arr, N)
 
 
 if __name__ == "__main__":

@@ -4,7 +4,6 @@ import scipy.stats as sts
 
 import plotly.figure_factory as ff
 import plotly.graph_objects as go
-from ipysheet import from_array, to_array
 from st_aggrid import AgGrid, DataReturnMode, GridUpdateMode, GridOptionsBuilder
 
 

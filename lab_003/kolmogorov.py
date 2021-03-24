@@ -40,7 +40,18 @@ def find_time(matrix, n):
         t = np.zeros(n)
 
     for i in range(n):
-        st.write(f"Время t_{i} = {t[i]}")
+        st.write(f"Время t_{i} = {round(t[i], 5)}")
+
+
+@st.cache()
+def get_data(n, zo):
+    arr = np.ones((n, n)).reshape(-1, n)
+    cols = [f"S_{i}" for i in range(1, n+1)]
+    if zo == 1:
+        df = pd.DataFrame(arr, columns=cols)
+    else:
+        df = pd.DataFrame(arr, columns=cols)
+    return df
 
 
 def main():
@@ -52,12 +63,13 @@ def main():
 
     c1, c2 = st.beta_columns(2)
     N = c1.slider("Количество состояний системы (N):", min_value=1, max_value=10, value=5)
+    zero_one = c2.slider("Заполнить нулями/единицами:", min_value=0, max_value=1, value=1)
 
-    df = pd.DataFrame(np.zeros((N, N)))
-    st.subheader("Введите данные")
-    grid_return = AgGrid(df, editable=True)
+    df = get_data(N, zero_one)
+    st.subheader("Введите данные:")
+    grid_return = AgGrid(df, editable=True, reload_data=False)
 
-    df = grid_return("data")
+    df = grid_return["data"]
     find_time(df.to_numpy(), N)
 
 

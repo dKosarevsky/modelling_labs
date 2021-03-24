@@ -4,6 +4,7 @@ import pandas as pd
 
 import plotly.figure_factory as ff
 import plotly.graph_objects as go
+
 from st_aggrid import AgGrid, DataReturnMode, GridUpdateMode, GridOptionsBuilder
 
 
@@ -40,7 +41,7 @@ def find_time(matrix, n):
         t = np.zeros(n)
 
     for i in range(n):
-        st.write(f"Время t_{i} = {round(t[i], 5)}")
+        st.write(f"Время t_{i+1} = {round(t[i], 5)}")
 
 
 @st.cache()

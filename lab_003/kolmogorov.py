@@ -1,7 +1,6 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-import scipy.stats as sts
 
 import plotly.figure_factory as ff
 import plotly.graph_objects as go
@@ -41,7 +40,7 @@ def find_time(matrix, n):
         t = np.zeros(n)
 
     for i in range(n):
-        st.write(f"t_{i} = {t[i]}")
+        st.write(f"Время t_{i} = {t[i]}")
 
 
 def main():
@@ -55,8 +54,10 @@ def main():
     N = c1.slider("Количество состояний системы (N):", min_value=1, max_value=10, value=5)
 
     df = pd.DataFrame(np.zeros((N, N)))
-    AgGrid(df)
+    st.subheader("Введите данные")
+    grid_return = AgGrid(df, editable=True)
 
+    df = grid_return("data")
     find_time(df.to_numpy(), N)
 
 

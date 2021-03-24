@@ -4,6 +4,8 @@ import scipy.stats as sts
 
 import plotly.figure_factory as ff
 import plotly.graph_objects as go
+from ipysheet import from_array, to_array
+from st_aggrid import AgGrid, DataReturnMode, GridUpdateMode, GridOptionsBuilder
 
 
 def show_tz():
@@ -20,7 +22,7 @@ def show_tz():
     """)
 
 
-def solution(matrix, n):
+def find_time(matrix, n):
     a = np.zeros((n, n))  # матрица для решения СЛАУ
     b = np.zeros(n)  # матрица для результатов
 
@@ -37,8 +39,9 @@ def solution(matrix, n):
         t = np.linalg.solve(a, b)
     except np.linalg.LinAlgError:
         t = np.zeros(n)
+
     for i in range(n):
-        st.write(f"t{i} = {t[i]}")
+        st.write(f"t_{i} = {t[i]}")
 
 
 def main():
@@ -49,8 +52,12 @@ def main():
         show_tz()
 
     c1, c2 = st.beta_columns(2)
-    N = c1.number_input("Количество состояний системы (N):", min_value=0, max_value=10, value=8)
-    lambda_ = c2.number_input("Какое-то полезное значение:", min_value=0.000001, value=.01)
+    N = c1.slider("Количество состояний системы (N):", min_value=1, max_value=10, value=5)
+
+    df = pd.DataFrame(np.zeros((N, N)))
+    AgGrid(df)
+
+    find_time(df.to_numpy(), N)
 
 
 if __name__ == "__main__":

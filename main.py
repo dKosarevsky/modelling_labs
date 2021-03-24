@@ -37,7 +37,6 @@ def main():
         random_variables.main()
 
     elif lab[:1] == "3":
-        st.write(":construction: В разработке... :construction:")
         kolmogorov.main()
 
 

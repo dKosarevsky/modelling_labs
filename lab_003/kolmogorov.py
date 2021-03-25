@@ -1,8 +1,10 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
+import quantecon as qe
 
 import plotly.graph_objects as go
+import matplotlib.pyplot as plt
 
 from st_aggrid import AgGrid
 
@@ -46,13 +48,48 @@ def find_time(matrix, n):
         st.write(f"В предельном режиме система в среднем {perc}% времени будет находиться в состоянии S_{i}")
         st.write("---")
 
+    # # α = β = 0.1
+    # # n = 10000
+    # # p = β / (α + β)
+    # #
+    # # P = ((1 - α, α),  # Careful: P and p are distinct
+    # #      (β, 1 - β))
+    # # P = np.array(P)
+    # # mc = MarkovChain(P)
+    # mc = qe.MarkovChain(matrix)
+    # fig, ax = plt.subplots(figsize=(9, 6))
+    # ax.set_ylim(-0.25, 0.25)
+    # ax.grid()
+    # ax.hlines(0, 0, n, lw=2, alpha=0.6)  # Horizonal line at zero
+    #
+    # for x0, col in ((0, 'blue'), (1, 'green')):
+    #     # Generate time series for worker that starts at x0
+    #     X = mc.simulate(n, init=x0)
+    #     # Compute fraction of time spent unemployed, for each n
+    #     X_bar = (X == 0).cumsum() / (1 + np.arange(n, dtype=float))
+    #     # Plot
+    #     ax.fill_between(range(n), np.zeros(n), X_bar - p, color=col, alpha=0.1)
+    #     ax.plot(X_bar - p, color=col, label=f'$X_0 = \, {x0} $')
+    #     # Overlay in black--make lines clearer
+    #     ax.plot(X_bar - p, 'k-', alpha=0.6)
+    #
+    # ax.legend(loc='upper right')
+    # st.pyplot(fig)
+
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=np.arange(n),
+        x=a,
+        # x=np.arange(n),
+        # x=matrix,
         y=p,
         mode='lines',
     ))
-    fig.update_layout(title_text="? Какой-то полезный график")
+    fig.update_layout(
+        title_text="? Какой-то полезный график",
+        xaxis_title='Состояния (а нужно Время !!)',
+        yaxis_title='Вероятность',
+        showlegend=False
+    )
     st.write(fig)
 
 

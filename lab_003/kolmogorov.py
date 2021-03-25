@@ -4,7 +4,7 @@ import pandas as pd
 #import quantecon as qe
 
 import plotly.graph_objects as go
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 from st_aggrid import AgGrid
 

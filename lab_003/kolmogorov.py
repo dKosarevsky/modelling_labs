@@ -1,9 +1,7 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-import scipy.stats as sts
 
-import plotly.figure_factory as ff
 import plotly.graph_objects as go
 
 from st_aggrid import AgGrid
@@ -37,27 +35,38 @@ def find_time(matrix, n):
     b[-1] = 1  # нормализация матрицы
 
     try:
-        t = np.linalg.solve(a, b)
+        p = np.linalg.solve(a, b)
     except np.linalg.LinAlgError:
-        t = np.zeros(n)
+        p = np.zeros(n)
 
     for i in range(n):
-        # st.write(f"Вероятность p_{i} = {round(t[i], 2)}")
-        st.write(f"Вероятность p_{i+1} = {round(t[i], 2)}")
+        pr = round(p[i], 2)
+        perc = round(pr * 100, 2)
+        st.write(f"Вероятность p_{i} = {pr}.")
+        st.write(f"В предельном режиме система в среднем {perc}% времени будет находиться в состоянии S_{i}")
+        st.write("---")
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=np.arange(n),
+        y=p,
+        mode='lines',
+    ))
+    fig.update_layout(title_text="? Какой-то полезный график")
+    st.write(fig)
 
 
 @st.cache()
 def get_data(n, vals):
     arr_0 = np.zeros((n, n)).reshape(-1, n)
     arr_1 = np.ones((n, n)).reshape(-1, n)
-    # cols = [f"S_{i}" for i in range(0, n)]
-    cols = [f"S_{i}" for i in range(1, n+1)]
+    cols = [f"S_{i}" for i in range(0, n)]
     if vals == 0:
         df = pd.DataFrame(arr_0, columns=cols)
     elif vals == 1:
         df = pd.DataFrame(arr_1, columns=cols)
     else:
-        df = pd.DataFrame(np.random.randint(0, 1000, size=n*n).reshape(-1, n), columns=cols)
+        df = pd.DataFrame(np.random.randint(0, 10, size=n*n).reshape(-1, n), columns=cols)
     return df
 
 
@@ -78,20 +87,6 @@ def main():
 
     arr = grid_return["data"].to_numpy()
     find_time(arr, N)
-
-
-    # lower_boundary = 0
-    # upper_boundary = N
-    # uniform_rv = sts.uniform(lower_boundary, upper_boundary - lower_boundary)
-    # pdf = uniform_rv.pdf(arr)
-    # fig = go.Figure()
-    # fig.add_trace(go.Scatter(
-    #     x=arr,
-    #     y=pdf,
-    #     mode='lines+markers',
-    # ))
-    # fig.update_layout(title_text="? Вероятности")
-    # st.write(fig)
 
 
 if __name__ == "__main__":

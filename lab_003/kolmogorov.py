@@ -1,12 +1,12 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-#import quantecon as qe
 
 import plotly.graph_objects as go
-#import matplotlib.pyplot as plt
 
 from st_aggrid import AgGrid
+
+from .src.markovchain import MarkovChain
 
 
 def show_tz():
@@ -124,6 +124,10 @@ def main():
 
     arr = grid_return["data"].to_numpy()
     find_time(arr, N)
+
+    if 6 >= N >= 2:
+        mc = MarkovChain(arr, [f"S_{i}" for i in range(N)])
+        st.write(mc.draw())
 
 
 if __name__ == "__main__":

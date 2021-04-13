@@ -1,7 +1,9 @@
 import streamlit as st
+import scipy.stats as sts
 import numpy.random as nr
 import numpy as np
 import pandas as pd
+import random
 import math
 
 
@@ -25,6 +27,25 @@ class NormalDistribution:
         return nr.normal(self._m, self._d)
 
 
+class PoissonDistribution:
+    def __init__(self, m):
+        self._m = m
+        self.poisson_rv = sts.poisson(m)
+
+    def _poisson_pmf(self, x):
+        if x < 0:
+            return 0
+        return self.poisson_rv.pmf(x)
+
+    def _poisson_cdf(self, x):
+        if x < 0:
+            return 0
+        return self.poisson_rv.cdf(x)
+
+    def generate(self):
+        return self._poisson_cdf(random.random())
+
+
 class ErlangDistribution:
     def __init__(self, k, l_):
         self._l = l_
@@ -41,6 +62,7 @@ class ErlangDistribution:
         return 1 - (1 + self._l * x) * np.exp(-self._l * x)
 
     def generate(self):
+        # return self._erlang_cdf(random.random())
         return nr.gamma(self._k, self._l)
 
 
@@ -232,6 +254,69 @@ class Modeller:
                 processor.max_queue_size, round(current_time, 3))
 
 
+class ModellerP:
+    def __init__(self, uniform_a, uniform_b, mu, reenter_prop):
+        self._generator = Generator(UniformDistribution(uniform_a, uniform_b))
+        self._processor = Processor(PoissonDistribution(mu), reenter_prop)
+        self._generator.add_receiver(self._processor)
+
+    def event_based_modelling(self, request_count):
+        generator = self._generator
+        processor = self._processor
+
+        gen_period = generator.next_time()
+        proc_period = gen_period + processor.next_time()
+
+        while processor.processed_requests < request_count:
+            # print( processor.next_time(), generator.next_time())
+            if gen_period <= proc_period:
+                # появился новый запрос
+                # добавляем оправляем его в процессор
+                generator.emit_request()
+                gen_period += generator.next_time()
+            if gen_period >= proc_period:
+                # закончилась обработка
+                # обрабатываем запрос
+                processor.process()
+
+                # проверка для самого первого запроса
+                if processor.current_queue_size > 0:
+                    proc_period += processor.next_time()
+                else:
+                    proc_period = gen_period + processor.next_time()
+
+        return (processor.processed_requests, processor.reentered_requests,
+                processor.max_queue_size, round(proc_period, 3))
+
+    def time_based_modelling(self, request_count, dt):
+        generator = self._generator
+        processor = self._processor
+
+        gen_period = generator.next_time()
+        proc_period = gen_period
+        current_time = 0
+        while processor.processed_requests < request_count:
+            if gen_period <= current_time:
+                # появился новый запрос
+                # добавляем оправляем его в процессор
+                generator.emit_request()
+                gen_period += generator.next_time()
+            if current_time >= proc_period:
+                # закончилась обработка
+                # обрабатываем запрос
+                processor.process()
+                if processor.current_queue_size > 0:
+                    proc_period += processor.next_time()
+                else:
+                    proc_period = gen_period + processor.next_time()
+
+            # прибавляем дельту
+            current_time += dt
+
+        return (processor.processed_requests, processor.reentered_requests,
+                processor.max_queue_size, round(current_time, 3))
+
+
 def show_tz():
     st.markdown("""
         У нас есть генератор (или источник сообщений), есть память, и есть обслуживающий аппарат (ОА). 
@@ -309,7 +394,22 @@ def main():
     if distribution[:1] == "2":
         st.write(f"Параметры обслуживающего аппарата. {distribution[3:]} распределение")
         c2, c3 = st.beta_columns(2)
-        m = c3.number_input("Мат. ожидание (μ):", min_value=1., max_value=10000., value=5.)
+        mu_ = c3.number_input("Мат. ожидание (μ):", min_value=1., max_value=10000., value=5.)
+
+        model = ModellerP(a, b, mu_, reenter_probability)
+        result1 = model.event_based_modelling(requests_count)
+
+        model2 = ModellerP(a, b, mu_, reenter_probability)
+        result2 = model2.time_based_modelling(requests_count, delta_t)
+
+        df = pd.DataFrame({
+            "Метод": ["Событийный", "Δt"],
+            "Обработанные запросы": [result1[0], result2[0]],
+            "Возвращенные запросы": [result1[1], result2[1]],
+            "Мах длина очереди": [result1[2], result2[2]],
+            "Время работы": [result1[3], result2[3]]
+        }).T
+        st.write(df)
 
     if distribution[:1] == "3":
         st.write(f"Параметры обслуживающего аппарата. {distribution[3:]} распределение")

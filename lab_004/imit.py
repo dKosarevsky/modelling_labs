@@ -1,8 +1,11 @@
 import streamlit as st
 import numpy.random as nr
+import numpy as np
+import pandas as pd
+import math
 
 
-class UniformGenerator:
+class UniformDistribution:
     def __init__(self, a, b):
         if not 0 <= a <= b:
             raise ValueError('Параметры должны удовлетворять условию 0 <= a <= b')
@@ -13,13 +16,32 @@ class UniformGenerator:
         return nr.uniform(self._a, self._b)
 
 
-class NormalGenerator:
+class NormalDistribution:
     def __init__(self, m, d):
         self._m = m
         self._d = d
 
     def generate(self):
         return nr.normal(self._m, self._d)
+
+
+class ErlangDistribution:
+    def __init__(self, k, l_):
+        self._l = l_
+        self._k = k
+
+    def _erlang_pdf(self, x):
+        if x < 0:
+            return 0
+        return pow(self._l, self._k + 1) * pow(x, self._k) * np.exp(- self._l * x) / math.factorial(self._k)
+
+    def _erlang_cdf(self, x):
+        if x < 0:
+            return 0
+        return 1 - (1 + self._l * x) * np.exp(-self._l * x)
+
+    def generate(self):
+        return nr.gamma(self._k, self._l)
 
 
 class Model:
@@ -53,8 +75,8 @@ class Model:
         return 1
 
     def event_based_modelling(self, a, b, m, d):
-        req_generator = UniformGenerator(a, b)
-        req_proccessor = NormalGenerator(m, d)
+        req_generator = UniformDistribution(a, b)
+        req_proccessor = NormalDistribution(m, d)
 
         req_done_count = 0
         t_generation = req_generator.generate()
@@ -69,12 +91,12 @@ class Model:
                 req_done_count += self.rem_from_queue(True)
                 t_proccessor += req_proccessor.generate()
 
-        return self.queue_len_max, self.req_count, self.reenter
+        return self.queue_len_max, self.req_count, self.reenter, round(t_proccessor, 3)
 
     def time_based_modelling(self, a, b, m, d):
 
-        req_generator = UniformGenerator(a, b)
-        req_proccessor = NormalGenerator(m, d)
+        req_generator = UniformDistribution(a, b)
+        req_proccessor = NormalDistribution(m, d)
 
         req_done_count = 0
         t_generation = req_generator.generate()
@@ -94,7 +116,120 @@ class Model:
 
             t_curr += self.dt
 
-        return self.queue_len_max, self.req_count, self.reenter
+        return self.queue_len_max, self.req_count, self.reenter, round(t_curr, 3)
+
+
+class Generator:
+    def __init__(self, generator):
+        self._generator = generator
+        self._receivers = set()
+
+    def add_receiver(self, receiver):
+        self._receivers.add(receiver)
+
+    def remove_receiver(self, receiver):
+        try:
+            self._receivers.remove(receiver)
+        except KeyError:
+            pass
+
+    def next_time(self):
+        return self._generator.generate()
+
+    def emit_request(self):
+        for receiver in self._receivers:
+            receiver.receive_request()
+
+
+class Processor(Generator):
+    def __init__(self, generator, reenter_probability=0):
+        super().__init__(generator)
+        self.current_queue_size = 0
+        self.max_queue_size = 0
+        self.processed_requests = 0
+        self.reenter_probability = reenter_probability
+        self.reentered_requests = 0
+
+    # обрабатываем запрос, если они есть
+    def process(self):
+        if self.current_queue_size > 0:
+            self.processed_requests += 1
+            self.current_queue_size -= 1
+            self.emit_request()
+            # Возвращаем реквест, если срабатывает возвращаемость
+            if nr.random_sample() <= self.reenter_probability:
+                self.reentered_requests += 1
+                # Sself.processed_requests -= 1
+                self.receive_request()
+
+    # добавляем реквест в очередь
+    def receive_request(self):
+        self.current_queue_size += 1
+        if self.current_queue_size > self.max_queue_size:
+            self.max_queue_size = self.current_queue_size
+
+
+class Modeller:
+    def __init__(self, uniform_a, uniform_b, er_k, er_l, reenter_prop):
+        self._generator = Generator(UniformDistribution(uniform_a, uniform_b))
+        self._processor = Processor(ErlangDistribution(er_k, er_l), reenter_prop)
+        self._generator.add_receiver(self._processor)
+
+    def event_based_modelling(self, request_count):
+        generator = self._generator
+        processor = self._processor
+
+        gen_period = generator.next_time()
+        proc_period = gen_period + processor.next_time()
+
+        while processor.processed_requests < request_count:
+            # print( processor.next_time(), generator.next_time())
+            if gen_period <= proc_period:
+                # появился новый запрос
+                # добавляем оправляем его в процессор
+                generator.emit_request()
+                gen_period += generator.next_time()
+            if gen_period >= proc_period:
+                # закончилась обработка
+                # обрабатываем запрос
+                processor.process()
+
+                # проверка для самого первого запроса
+                if processor.current_queue_size > 0:
+                    proc_period += processor.next_time()
+                else:
+                    proc_period = gen_period + processor.next_time()
+
+        return (processor.processed_requests, processor.reentered_requests,
+                processor.max_queue_size, round(proc_period, 3))
+
+    def time_based_modelling(self, request_count, dt):
+        generator = self._generator
+        processor = self._processor
+
+        gen_period = generator.next_time()
+        proc_period = gen_period
+        current_time = 0
+        while processor.processed_requests < request_count:
+            if gen_period <= current_time:
+                # появился новый запрос
+                # добавляем оправляем его в процессор
+                generator.emit_request()
+                gen_period += generator.next_time()
+            if current_time >= proc_period:
+                # закончилась обработка
+                # обрабатываем запрос
+                processor.process()
+                if processor.current_queue_size > 0:
+                    proc_period += processor.next_time()
+                else:
+                    proc_period = gen_period + processor.next_time()
+
+            # прибавляем дельту
+            current_time += dt
+
+        return (processor.processed_requests, processor.reentered_requests,
+                processor.max_queue_size, round(current_time, 3))
 
 
 def show_tz():
@@ -139,39 +274,63 @@ def main():
 
     st.write("Параметры генератора. Равномерное распределение")
     c1, c2 = st.beta_columns(2)
-    a = c1.number_input("Задайте начало интервала (a):", min_value=1., max_value=10000., value=1.)
-    b = c2.number_input("Задайте начало интервала (b):", min_value=1., max_value=10000., value=10.)
-
-    if distribution[:1] == "1":
-        st.write(f"Параметры обслуживающего аппарата. {distribution[3:]} распределение")  # TODO fix not only naming
-        c2, c3 = st.beta_columns(2)
-        m = c2.number_input("Задайте значение (μ):", min_value=1., max_value=10000., value=5.)
-        d = c3.number_input("Задайте значение (D):", min_value=1., max_value=10000., value=5.)
+    a = c1.number_input("Начало интервала (a):", min_value=0, max_value=10000, value=0)
+    b = c2.number_input("Конец интервала (b):", min_value=0, max_value=10000, value=10)
 
     st.write("Дополнительные параметры")
     c4, c5, c6 = st.beta_columns(3)
-    requests_count = c4.number_input("Количество заявок:", min_value=1, max_value=10000, value=1000)
-    reenter_probability = c5.number_input("Вер-сть повторной обработки:", min_value=0., max_value=1., value=.5)
-    delta_t = c6.number_input("Задайте значение (Δt):", min_value=0., max_value=1., value=.1)
-    st.markdown("---")
+    requests_count = c4.number_input("Количество запросов:", min_value=1, max_value=10000, value=1000)
+    reenter_probability = c5.number_input("Вер-ть повторной обр-ки:", min_value=0., max_value=1., value=.5)
+    delta_t = c6.number_input("Значение (Δt):", min_value=0., max_value=1., value=.1)
 
-    modelT = Model(delta_t, requests_count, reenter_probability)
-    results1 = modelT.time_based_modelling(a, b, m, d)
+    if distribution[:1] == "1":
+        st.write(f"Параметры обслуживающего аппарата. {distribution[3:]} распределение")
+        c2, c3 = st.beta_columns(2)
+        m = c2.number_input("Мат. ожидание (μ):", min_value=1., max_value=10000., value=5.)
+        d = c3.number_input("Средн.кв. отклонение (σ):", min_value=1., max_value=10000., value=5.)
 
-    modelEvent = Model(delta_t, requests_count, reenter_probability)
-    results2 = modelEvent.event_based_modelling(a, b, m, d)
+        modelT = Model(delta_t, requests_count, reenter_probability)
+        results1 = modelT.time_based_modelling(a, b, m, d)
+        queue_len_max1, req_done_count1, reenter1, time1 = results1
 
-    queue_len_max1, req_done_count1, reenter1 = results1
-    st.write("Метод Δt")
-    st.write(f"Количество повторно обработанных заявок: {reenter1}")
-    st.write(f"Максимальная длина очереди: {queue_len_max1}")
-    st.markdown("---")
+        modelEvent = Model(delta_t, requests_count, reenter_probability)
+        results2 = modelEvent.event_based_modelling(a, b, m, d)
+        queue_len_max2, req_done_count2, reenter2, time2 = results2
 
-    queue_len_max2, req_done_count2, reenter2 = results2
-    st.write("Событийный метод")
-    st.write(f"Количество повторно обработанных заявок: {reenter2}")
-    st.write(f"Максимальная длина очереди: {queue_len_max2}")
-    st.markdown("---")
+        df = pd.DataFrame({
+            "Метод": ["Событийный", "Δt"],
+            "Обработанные запросы": [req_done_count2, req_done_count1],
+            "Возвращенные запросы": [reenter2, reenter1],
+            "Мах длина очереди": [queue_len_max2, queue_len_max1],
+            "Время работы": [time2, time1]
+        }).T
+        st.write(df)
+
+    if distribution[:1] == "2":
+        st.write(f"Параметры обслуживающего аппарата. {distribution[3:]} распределение")
+        c2, c3 = st.beta_columns(2)
+        m = c3.number_input("Мат. ожидание (μ):", min_value=1., max_value=10000., value=5.)
+
+    if distribution[:1] == "3":
+        st.write(f"Параметры обслуживающего аппарата. {distribution[3:]} распределение")
+        c2, c3 = st.beta_columns(2)
+        er_k = c2.number_input("Shape (k):", min_value=1, max_value=100, value=1)
+        er_lambda = c3.number_input("Scale (λ):", min_value=1, max_value=100, value=2)
+
+        model = Modeller(a, b, er_k, er_lambda, reenter_probability)
+        result1 = model.event_based_modelling(requests_count)
+
+        model2 = Modeller(a, b, er_k, er_lambda, reenter_probability)
+        result2 = model2.time_based_modelling(requests_count, delta_t)
+
+        df = pd.DataFrame({
+            "Метод": ["Событийный", "Δt"],
+            "Обработанные запросы": [result1[0], result2[0]],
+            "Возвращенные запросы": [result1[1], result2[1]],
+            "Мах длина очереди": [result1[2], result2[2]],
+            "Время работы": [result1[3], result2[3]]
+        }).T
+        st.write(df)
 
 
 if __name__ == "__main__":

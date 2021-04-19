@@ -39,10 +39,10 @@ def get_start_probabilities(n, all_equal=True):
         return res
 
 
-def output(title, caption, data, n):
+def output(title, caption, data, n=2):
     st.write(title)
     for i in range(len(data)):
-        st.write(f"{caption} {i} {round(fabs(data[i]), n)}")
+        st.write(f"{caption}_{i} {round(fabs(data[i]), n)}")
 
 
 def calc_probas(matrix, n):
@@ -63,50 +63,11 @@ def calc_probas(matrix, n):
     except np.linalg.LinAlgError:
         p = np.zeros(n)
 
-    for i in range(n):
-        pr = round(p[i], 2)
-        perc = round(pr * 100, 2)
-        st.write(f"Предельная вероятность p_{i} = {pr}")
-        # st.write(f"В предельном режиме система в среднем {perc}% времени будет находиться в состоянии S_{i}")
-        # st.write("---")
-
-    # st.write(a)
-    # st.write(b)
-    # st.write(p)
-    # st.write(matrix)
-    # st.code([i for i in np.arange(1, 10, .5)])
-    # st.code(np.arange(1, 10, .5))
-
-    # Нахождение времени стабилизации
-    # start_probabilities = get_start_probabilities(n, all_equal=False)
-    # stabilization_time = calc_stabilization_times(matrix, start_probabilities, p)
-    # times, probabilities_over_time = calc_probability_over_time(matrix, start_probabilities, 5)
-    # output('Время стабилизации:', 't', stabilization_time)
-
-
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        # x=a,
-        # x=[matrix[:, step] for step in range(100)],
-        # x=np.arange(n),
-        x=np.arange(10),
-        # x=matrix,
-        # x=aug,
-        y=p,
-        # y=matrix,
-        mode='lines',
-    ))
-    fig.update_layout(
-        title_text="Время стабилизации системы",
-        xaxis_title="Время(t)",
-        yaxis_title="Вероятность (p)",
-        showlegend=False
-    )
-    st.write(fig)
+    return p, b
 
 
 @st.cache()
-def get_data(n, vals):
+def get_data(n: int, vals: int) -> pd.DataFrame:
     arr_0 = np.zeros((n, n)).reshape(-1, n)
     arr_1 = np.ones((n, n)).reshape(-1, n)
     cols = [f"S_{i}" for i in range(n)]
@@ -115,8 +76,38 @@ def get_data(n, vals):
     elif vals == 1:
         df = pd.DataFrame(arr_1, columns=cols)
     else:
-        df = pd.DataFrame(np.random.randint(0, 10, size=n*n).reshape(-1, n), columns=cols)
+        # df = pd.DataFrame(np.random.randint(0, 10, size=n*n).reshape(-1, n), columns=cols)
+        df = pd.DataFrame(np.random.randint(0, 2, size=n*n).reshape(-1, n), columns=cols)  # TODO fix
     return df
+
+
+def plot_probability_over_time(probabilities, stabilization_time, times, probabilities_over_time):
+    fig, ax = plt.subplots()
+    for i_node in range(len(probabilities_over_time[0])):
+        ax.plot(times, [i[i_node] for i in probabilities_over_time])
+        ax.scatter(stabilization_time[i_node], probabilities[i_node])
+
+    plt.title("Время стабилизации системы")
+    ax.legend([f"S_{i}" for i in range(len(probabilities))])
+    plt.xlabel('Время (t)')
+    plt.ylabel('Вероятность (p)')
+    plt.grid(True)
+    st.pyplot(fig)
+
+    # # interactive plotly plot (масло масляное
+    # fig = go.Figure()
+    # fig.add_trace(go.Scatter(
+    #     x=np.arange(10),
+    #     y=probabilities,
+    #     mode='lines',
+    # ))
+    # fig.update_layout(
+    #     title_text="Время стабилизации системы",
+    #     xaxis_title="Время(t)",
+    #     yaxis_title="Вероятность (p)",
+    #     # showlegend=False
+    # )
+    # st.write(fig)
 
 
 def plot_graph(graph):
@@ -134,9 +125,9 @@ def plot_graph(graph):
     components.html(source_code, height=1200, width=1000)
 
 
-def plot_graph2(G):
-    nodes = [Node(id=i, label=str(i), size=200) for i in range(len(G.nodes))]
-    edges = [Edge(source=i, target=j, type="CURVE_SMOOTH") for (i, j) in G.edges]
+def plot_graph2(graph):
+    nodes = [Node(id=i, label=str(i), size=200) for i in range(len(graph.nodes))]
+    edges = [Edge(source=i, target=j, type="CURVE_SMOOTH") for (i, j) in graph.edges]
 
     config = Config(width=500,
                     height=500,
@@ -168,13 +159,13 @@ def dps(matrix, probabilities):
     ]
 
 
-def calc_stabilization_times(matrix, start_probabilities, limit_probabilities):
-    n = len(matrix)
-    current_time = 0
+def calc_stabilization_times(matrix, start_probabilities, limit_probabilities, n, current_time=0):
     current_probabilities = start_probabilities.copy()
     stabilization_times = [0 for i in range(n)]
+    # stabilization_times = [1 for i in range(n)]  # TODO drop after tests
 
-    total_lambda_sum = sum([sum(i) for i in matrix]) * SEED
+    # total_lambda_sum = sum([sum(i) for i in matrix]) * SEED
+    total_lambda_sum = np.sum(matrix) * SEED
     cool_eps = [p/total_lambda_sum for p in limit_probabilities]
 
     while not all(stabilization_times):
@@ -219,20 +210,46 @@ def main():
         show_tz()
 
     c1, c2 = st.beta_columns(2)
-    N = c1.slider("Задайте количество состояний системы (N):", min_value=1, max_value=10, value=4)
-    values = c2.selectbox("Заполнить? (единицами, случайно):", (0, 1, "случайными значениями"))
-
+    N = c1.slider("Задайте количество состояний системы (N):", min_value=1, max_value=10, value=5)
+    values = c2.selectbox("Заполнить? (единицами, случайно):", (1, "случайными значениями"))
     df = get_data(N, values)
+
     st.subheader("Введите значения интенсивности переходов (λ):")
-    grid_return = AgGrid(df, editable=True, reload_data=False)
+    grid_return = AgGrid(
+        df,
+        editable=True,
+        # sortable=False,
+        # filter=False,
+        # resizable=False,
+        # defaultWidth=5,
+        # fit_columns_on_grid_load=True,
+        reload_data=False,
+    )
 
     arr = grid_return["data"].to_numpy()
-    calc_probas(arr, N)
 
+    # Находим предельные вероятности
+    probas, start_probas = calc_probas(arr, N)
+    st.write("Средний процент времени нахождения системы в предельном режиме в состоянии n:")
+    for i in range(N):
+        pr = round(probas[i], 2)
+        perc = round(pr * 100, 2)
+        st.write(f"S_{i} - {perc}%")
+    output('Предельные вероятности:', 'p', probas)
+
+    # Находим время стабилизации
+    start_probabilities = get_start_probabilities(N, all_equal=False)
+    stabilization_time = calc_stabilization_times(arr.tolist(), start_probas.tolist(), probas, N)  # TODO fix
+    output('Время стабилизации:', 't', stabilization_time)
+
+    # Выводим графики вероятностей как функции времени
+    times, probabilities_over_time = calc_probability_over_time(arr, start_probabilities, 5)
+    plot_probability_over_time(probas, stabilization_time, times, probabilities_over_time)  # TODO fix
+
+    # Рисуем графы
     G = nx.from_numpy_array(arr, create_using=nx.DiGraph)
-
-    # plot_graph2(G)
     plot_graph(G)
+    plot_graph2(G)
 
 
 if __name__ == "__main__":

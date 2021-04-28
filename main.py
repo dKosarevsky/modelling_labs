@@ -3,6 +3,7 @@ from lab_001 import pseudo_random_nums
 from lab_002 import random_variables
 from lab_003 import kolmogorov
 from lab_004 import imit
+from lab_005 import smo
 
 st.set_page_config(initial_sidebar_state="collapsed")
 st.sidebar.image('logo.png', width=300)
@@ -28,8 +29,9 @@ def main():
             "2. Исследование случайных величин",
             "3. Предельные вероятности состояний. Уравнения Колмогорова",
             "4. Программная имитация i-го прибора",
+            "5. Многоканальная СМО",
         ),
-        index=3
+        index=4
     )
 
     if lab[:1] == "1":
@@ -43,6 +45,9 @@ def main():
 
     elif lab[:1] == "4":
         imit.main()
+
+    elif lab[:1] == "5":
+        smo.main()
 
 
 if __name__ == "__main__":

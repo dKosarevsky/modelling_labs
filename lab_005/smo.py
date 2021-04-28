@@ -1,7 +1,5 @@
 import streamlit as st
 import numpy.random as nr
-import numpy as np
-import pandas as pd
 
 
 class UniformGenerator:
@@ -169,7 +167,7 @@ def event_based_modelling(client_m, client_d,
 
 def show_tz():
     st.markdown("""
-        Реализовать программу для моделирования следующей системы: в
+        Разработать программу для моделирования следующей системы: в
         информационный центр приходят клиенты через интервал времени 10 +- 2
         минуты. Если все три имеющихся оператора заняты, клиенту отказывают в
         обслуживании. Операторы имеют разную производительность и могут

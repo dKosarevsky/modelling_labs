@@ -181,15 +181,39 @@ def main():
         show_tz()
     st.markdown("---")
 
-    distribution = st.radio(
-        "Выберите тип распределения ОА", (
-            "1. Нормальное",
-            "2. Пуассоновское",
-            "3. Эрланговское",
-        )
+    st.write("Клиенты")
+    c0, c1, c2 = st.beta_columns(3)
+    n = c0.number_input("Количество запросов:", min_value=0, max_value=10000, value=300)
+    client_m = c1.number_input("Интервал (мин.):", min_value=.01, max_value=10000., value=10.)
+    client_d = c2.number_input("±:", min_value=.01, max_value=10000., value=2.)
+
+    st.write("Операторы")
+    c3, c4 = st.beta_columns(2)
+    op1_m = c3.number_input("№1. Интервал (мин.):", min_value=.01, max_value=10000., value=20.)
+    op1_d = c4.number_input(" ±:", min_value=.01, max_value=10000., value=5.)
+
+    c5, c6 = st.beta_columns(2)
+    op2_m = c5.number_input("№2. Интервал (мин.):", min_value=.01, max_value=10000., value=40.)
+    op2_d = c6.number_input("  ±:", min_value=.01, max_value=10000., value=10.)
+
+    c7, c8 = st.beta_columns(2)
+    op3_m = c7.number_input("№3. Интервал (мин.):", min_value=.01, max_value=10000., value=40.)
+    op3_d = c8.number_input("   ±:", min_value=.01, max_value=10000., value=20.)
+
+    st.write("Компьютеры")
+    c9, c10 = st.beta_columns(2)
+    comp1 = c9.number_input("Компьютер №1. Время обработки (мин.):", min_value=0.01, max_value=10000., value=15.)
+    comp2 = c10.number_input("Компьютер №2. Время обработки (мин.):", min_value=0.01, max_value=10000., value=30.)
+
+    denial_probability, missed_clients = event_based_modelling(
+        client_m, client_d, op1_m, op1_d, op2_m, op2_d, op3_m, op3_d, comp1, comp2, n
     )
 
+    st.button("Моделировать")
 
+    st.write("Результаты моделирования:")
+    st.code(f"Вероятность отказа: {denial_probability}")
+    st.code(f"Кол-во необработанных заявок: {missed_clients}")
 
 
 if __name__ == "__main__":
